@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14101B">
+<meta name="theme-color" content="#FAF9F5">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Esichia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ground:#14101B; --raised:#1C1726; --line:#2E2739;
-    --gold:#C6A664; --goldDim:#6E5C39; --porphyry:#7A2E3C;
-    --text:#E8E2D4; --muted:#8A8095;
+    --ground:#FAF9F5; --raised:#FFFFFF; --line:#E8E4DC;
+    --gold:#C2664A; --goldDim:#A34E35; --porphyry:#7A2E3C;
+    --text:#29261F; --muted:#6b6355;
     --serif:'Cormorant',Georgia,serif; --sans:'IBM Plex Sans',system-ui,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -231,9 +231,16 @@ function dici(fase,ciclo){
 const zitto=()=>{try{speechSynthesis.cancel()}catch(e){}};
 
 /* ─────────────── sessione ─────────────── */
-const P={attiva:false,quando:null,totale:0,tras:0,acc:0,t0:0,raf:0,ultimo:''};
+const P={attiva:false,quando:null,totale:0,tras:0,acc:0,t0:0,raf:0,ultimo:'',wake:null};
 const $=id=>document.getElementById(id);
 const ridotto=matchMedia('(prefers-reduced-motion:reduce)').matches;
+async function wakeOn(){
+ try{if('wakeLock'in navigator&&!P.wake){P.wake=await navigator.wakeLock.request('screen');}}
+ catch(e){}
+}
+function wakeOff(){
+ try{if(P.wake){P.wake.release();P.wake=null;}}catch(e){}
+}
 
 function tacche(n){
  const t=n>50?50:n,passo=n/t,g=$('tacche');g.innerHTML='';
@@ -255,6 +262,7 @@ function apri(quando){
  $('sessione').classList.add('on');
  $('pausa').textContent='Sospendi';$('pausa').className='secondario';
  campana(174); if(S.ison)isonOn();
+ wakeOn();
  avvia();
 }
 function avvia(){
@@ -288,7 +296,7 @@ function avvia(){
  P.raf=requestAnimationFrame(tick);
 }
 function finisci(){
- P.attiva=false;cancelAnimationFrame(P.raf);isonOff();zitto();campana(130);
+ P.attiva=false;cancelAnimationFrame(P.raf);isonOff();zitto();campana(130);wakeOff();
  const d=oggi();S.log[d]={...(S.log[d]||{}),[P.quando]:true};salva();
  $('frase').textContent='—';$('frase').style.opacity=.25;
  $('fase').textContent='compiuta';$('orologio').textContent='0:00';
@@ -296,7 +304,7 @@ function finisci(){
  render();
 }
 function chiudi(){
- P.attiva=false;cancelAnimationFrame(P.raf);isonOff();zitto();
+ P.attiva=false;cancelAnimationFrame(P.raf);isonOff();zitto();wakeOff();
  $('sessione').classList.remove('on');$('frase').style.opacity=.92;render();
 }
 $('chiudi').onclick=chiudi;
