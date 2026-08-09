@@ -118,7 +118,7 @@ const PLAN=[
 
 const FORMULE={
  piena:{nome:'Versione lunga',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
- breve:{nome:'Meditazione',in:'Signore Gesù Cristo',out:'abbi pietà di me'},
+ breve:{nome:'Meditazione',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
  minima:{nome:'Minima',in:'Kyrie',out:'eleison'},
  risorto:{nome:'Risorto',cicli:[
    {in:'Gesù Cristo Figlio di Dio',out:'Cristo Risorto'},
@@ -223,7 +223,7 @@ function dici(fase,ciclo){
    parla(c[fase]);
    return;
  }
- if(suona(S.formula+'-'+fase,1))return;
+ if(suona((S.formula==='breve'?'piena':S.formula)+'-'+fase,1))return;
  parla(F[fase]);
 }
 const zitto=()=>{try{speechSynthesis.cancel()}catch(e){}};
@@ -417,7 +417,7 @@ function render(){
  </div>`;
 
  app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>apri(b.dataset.q));
- app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.formula=b.dataset.f;salva();render();});
+ app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.formula=b.dataset.f;if(S.formula==='breve')S.pace=14;salva();render();});
  app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.pace=+b.dataset.p;salva();render();});
  app.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{S.durata=+b.dataset.d;salva();render();});
  app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S[b.dataset.t]=!S[b.dataset.t];salva();render();});
