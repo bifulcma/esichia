@@ -220,15 +220,30 @@ function dici(fase,ciclo){
  if(F.cicli){
    const c=F.cicli[ciclo%F.cicli.length];
    if(suona('risorto-'+fase,1))return;
-   try{const u=new SpeechSynthesisUtterance(c[fase]);
-    u.lang='it-IT';u.rate=.72;u.pitch=.9;u.volume=.85;speechSynthesis.speak(u);}catch(e){}
+   parla(c[fase]);
    return;
  }
  if(suona(S.formula+'-'+fase,1))return;
- try{const u=new SpeechSynthesisUtterance(F[fase]);
-  u.lang='it-IT';u.rate=.72;u.pitch=.9;u.volume=.85;speechSynthesis.speak(u);}catch(e){}
+ parla(F[fase]);
 }
 const zitto=()=>{try{speechSynthesis.cancel()}catch(e){}};
+// voce femminile italiana: sceglie la prima voce it-IT femminile disponibile
+let _voceFem=null;
+function voceFem(){
+ if(_voceFem)return _voceFem;
+ try{
+  const v=speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.toLowerCase().startsWith('it'));
+  const fem=v.find(x=>/elsa|elisa|giulia|chiara|federica|paola|silvia|maria|anna|vittoria|alessandra|sara|valentina|martina|sofia|ginevra|ilaria|noemi|beatrice|aurora|gaia|viola|emma|greta|luce|donna|female/i.test(x.name));
+  _voceFem=fem||v[0]||null;
+ }catch(e){_voceFem=null;}
+ return _voceFem;
+}
+function parla(testo){
+ try{const u=new SpeechSynthesisUtterance(testo);
+  u.lang='it-IT';u.rate=.72;u.pitch=1.05;u.volume=.85;
+  const v=voceFem();if(v)u.voice=v;
+  speechSynthesis.speak(u);}catch(e){}
+}
 
 /* ─────────────── sessione ─────────────── */
 const P={attiva:false,quando:null,totale:0,tras:0,acc:0,t0:0,raf:0,ultimo:'',wake:null};
