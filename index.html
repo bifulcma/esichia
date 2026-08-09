@@ -117,14 +117,14 @@ const PLAN=[
  {m:{k:100,g:1},e:{k:100,g:1}},{m:{k:100,g:1},e:{k:100,g:1}}];
 
 const FORMULE={
- piena:{nome:'Piena',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
- breve:{nome:'Breve',in:'Signore Gesù Cristo',out:'abbi pietà di me'},
+ piena:{nome:'Versione lunga',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
+ breve:{nome:'Meditazione',in:'Signore Gesù Cristo',out:'abbi pietà di me'},
  minima:{nome:'Minima',in:'Kyrie',out:'eleison'},
  risorto:{nome:'Risorto',cicli:[
    {in:'Gesù Cristo Figlio di Dio',out:'Cristo Risorto'},
    {in:'concedimi la grazia',out:'Amen'}]}};
 
-const PACE=[{s:6,nome:'Rapido'},{s:8,nome:'Naturale'},{s:10,nome:'Lento'}];
+const PACE=[{s:10,nome:'Respiro breve'},{s:12,nome:'Respiro naturale'},{s:14,nome:'Respiro lungo'}];
 const DURATE=[{m:10,nome:'10 min'},{m:20,nome:'20 min'}];
 const CAP=20*60;
 const BASE='https://raw.githubusercontent.com/bifulcma/esichia/main/audio';
@@ -270,7 +270,7 @@ function avvia(){
  const tick=now=>{
   if(!P.attiva)return;
   const el=P.acc+(now-P.t0)/1000;P.tras=el;
-  const dentro=el%S.pace,metà=S.pace/2;
+  const dentro=el%S.pace,metà=S.pace*0.4;
   const fase=dentro<metà?'in':'out';
   const prog=fase==='in'?dentro/metà:(dentro-metà)/metà;
   const t=ridotto?.5:(fase==='in'?prog:1-prog);
