@@ -125,7 +125,6 @@ const FORMULE={
    {in:'concedimi la grazia',out:'Amen'}]}};
 
 const PACE=[{s:10,nome:'Respiro breve'},{s:12,nome:'Respiro naturale'},{s:14,nome:'Respiro lungo'}];
-const DURATE=[{m:10,nome:'10 min'},{m:20,nome:'20 min'}];
 const CAP=20*60;
 const BASE='https://raw.githubusercontent.com/bifulcma/esichia/main/audio';
 const TRACCE={'piena-in':1,'piena-out':1,'breve-in':1,'breve-out':1,
@@ -219,11 +218,9 @@ function dici(fase,ciclo){
  const F=FORMULE[S.formula];
  if(F.cicli){
    const c=F.cicli[ciclo%F.cicli.length];
-   if(suona('risorto-'+fase,1))return;
    parla(c[fase]);
    return;
  }
- if(suona((S.formula==='breve'?'piena':S.formula)+'-'+fase,1))return;
  parla(F[fase]);
 }
 const zitto=()=>{try{speechSynthesis.cancel()}catch(e){}};
@@ -233,7 +230,7 @@ function voceFem(){
  if(_voceFem)return _voceFem;
  try{
   const v=speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.toLowerCase().startsWith('it'));
-  const fem=v.find(x=>/elsa|elisa|giulia|chiara|federica|paola|silvia|maria|anna|vittoria|alessandra|sara|valentina|martina|sofia|ginevra|ilaria|noemi|beatrice|aurora|gaia|viola|emma|greta|luce|donna|female/i.test(x.name));
+  const fem=v.find(x=>/alice|elsa|elisa|giulia|chiara|federica|paola|silvia|maria|anna|vittoria|alessandra|sara|valentina|martina|sofia|ginevra|ilaria|noemi|beatrice|aurora|gaia|viola|emma|greta|luce|antonella|caterina|donna|female/i.test(x.name));
   _voceFem=fem||v[0]||null;
  }catch(e){_voceFem=null;}
  return _voceFem;
@@ -271,8 +268,8 @@ function tacche(n){
 function apri(quando){
  P.quando=quando;P.tras=0;P.acc=0;P.ultimo='';
  const c=PLAN[settimana()-1][quando];
- P.totale=Math.min(CAP,S.durata*60);
- $('carico').textContent=c.g+' × '+c.k+' nodi · '+S.durata+' min';
+ P.totale=c.k*c.g*S.pace; // durata = nodi × giri × passo: il timer finisce esattamente coi nodi
+ $('carico').textContent=c.g+' × '+c.k+' nodi · '+mmss(P.totale);
  tacche(c.k*c.g);
  $('sessione').classList.add('on');
  $('pausa').textContent='Sospendi';$('pausa').className='secondario';
@@ -360,7 +357,7 @@ function render(){
     <span class="eyebrow" style="${f?'color:var(--gold)':''}">${et}</span>
     ${f?'<span class="eyebrow" style="color:var(--gold)">fatta</span>':''}</div>
    <h2>${c.g} × ${c.k} nodi</h2>
-   <p>${mmss(Math.min(CAP,S.durata*60))} · ${anc}</p></button>`;};
+   <p>${mmss(c.k*c.g*S.pace)} · ${anc}</p></button>`;};
 
  app.innerHTML=`<div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2.5rem">
@@ -395,10 +392,6 @@ function render(){
   <div class="row" style="margin-bottom:1.5rem">${PACE.map(p=>
    `<button class="pill${S.pace===p.s?' on':''}" data-p="${p.s}">${p.nome} · ${p.s}s</button>`).join('')}</div>
 
-  <p style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">Durata sessione</p>
-  <div class="row" style="margin-bottom:1.5rem">${DURATE.map(d=>
-   `<button class="pill${S.durata===d.m?' on':''}" data-d="${d.m}">${d.nome}</button>`).join('')}</div>
-
   <button class="sw" data-t="ison"><span style="text-align:left">
    <span style="display:block;font-size:.875rem">Ison</span>
    <span style="display:block;font-size:.6875rem;color:var(--muted)">bordone continuo sotto la preghiera</span>
@@ -412,7 +405,7 @@ function render(){
   <p id="statoAudio" style="font-size:.6875rem;color:var(--goldDim);margin:1rem 0 2rem">
    ${testoStato()}</p>
 
-  <p class="nota">Sessione da dieci o venti minuti, a tua scelta. Nessun ritiro prolungato.
+  <p class="nota">La durata segue i nodi del piano: ogni respiro è un nodo, il timer finisce quando i nodi sono compiuti.
    Se compaiono sonno molto ridotto senza bisogno di dormire, pensiero accelerato
    o senso di missione, sospendi e parlane con uno specialista prima di riprendere.</p>
  </div>`;
@@ -420,7 +413,6 @@ function render(){
  app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>apri(b.dataset.q));
  app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.formula=b.dataset.f;if(S.formula==='breve')S.pace=14;salva();render();});
  app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.pace=+b.dataset.p;salva();render();});
- app.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{S.durata=+b.dataset.d;salva();render();});
  app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S[b.dataset.t]=!S[b.dataset.t];salva();render();});
  const r=$('riparti');if(r)r.onclick=()=>{S.start=oggi();salva();render();};
 }
