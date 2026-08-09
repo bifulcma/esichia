@@ -95,6 +95,15 @@
       </div>
     </div>
     <p id="orologio" class="orologio">0:00</p>
+    <div style="width:100%;max-width:20rem;margin-top:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem">
+        <span class="eyebrow">Nodi</span>
+        <span id="nodi" style="font-size:1.5rem;color:var(--gold);font-variant-numeric:tabular-nums">0</span>
+      </div>
+      <div style="height:4px;background:var(--line);border-radius:99px;overflow:hidden">
+        <div id="barraAvanz" style="height:100%;width:0%;background:var(--gold);transition:width .3s"></div>
+      </div>
+    </div>
   </div>
   <div class="fondo"><button id="pausa" class="secondario">Sospendi</button></div>
 </div>
@@ -110,9 +119,13 @@ const PLAN=[
 const FORMULE={
  piena:{nome:'Piena',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
  breve:{nome:'Breve',in:'Signore Gesù Cristo',out:'abbi pietà di me'},
- minima:{nome:'Minima',in:'Kyrie',out:'eleison'}};
+ minima:{nome:'Minima',in:'Kyrie',out:'eleison'},
+ risorto:{nome:'Risorto',cicli:[
+   {in:'Gesù Cristo Figlio di Dio',out:'Cristo Risorto'},
+   {in:'concedimi la grazia',out:'Amen'}]}};
 
 const PACE=[{s:6,nome:'Rapido'},{s:8,nome:'Naturale'},{s:10,nome:'Lento'}];
+const DURATE=[{m:10,nome:'10 min'},{m:20,nome:'20 min'}];
 const CAP=20*60;
 const BASE='https://raw.githack.com/bifulcma/esichia/main/audio';
 const TRACCE={'piena-in':1,'piena-out':1,'breve-in':1,'breve-out':1,
@@ -122,18 +135,25 @@ const TRACCE={'piena-in':1,'piena-out':1,'breve-in':1,'breve-out':1,
 const S={
  start:localStorage.getItem('esichia:start')||null,
  log:JSON.parse(localStorage.getItem('esichia:log')||'{}'),
- ...JSON.parse(localStorage.getItem('esichia:pref')||'{"formula":"piena","pace":8,"ison":true,"voce":true}')
+ ...JSON.parse(localStorage.getItem('esichia:pref')||'{"formula":"piena","pace":8,"durata":10,"ison":true,"voce":true}')
 };
 const salva=()=>{
  localStorage.setItem('esichia:log',JSON.stringify(S.log));
  localStorage.setItem('esichia:pref',JSON.stringify(
-   {formula:S.formula,pace:S.pace,ison:S.ison,voce:S.voce}));
+   {formula:S.formula,pace:S.pace,durata:S.durata,ison:S.ison,voce:S.voce}));
  if(S.start)localStorage.setItem('esichia:start',S.start);
 };
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const oggi=()=>iso(new Date());
 const settimana=()=>S.start?Math.min(8,Math.max(1,
   Math.floor((new Date(oggi())-new Date(S.start))/864e5/7)+1)):1;
+// streak perdonante: se 7 giorni senza pratica, non reset secco ma ripartenza morbida
+// (torna alla settimana 1 ma conserva lo storico; il reset è un invito, non una punizione)
+const giorniSenza=()=>{
+ if(!S.start)return 0;
+ let n=0;const d=new Date();
+ for(let i=0;i<7;i++){const v=S.log[iso(d)]||{};if(!v.m&&!v.e)n++;d.setDate(d.getDate()-1);}
+ return n;};
 const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 
 /* ─────────────── audio ─────────────── */
@@ -195,9 +215,17 @@ function isonOff(){
  try{n.g.gain.exponentialRampToValueAtTime(1e-4,ctx().currentTime+2);
   setTimeout(()=>n.nodi.forEach(x=>{try{x.stop()}catch(e){}}),2400);}catch(e){}
 }
-function dici(fase){
+function dici(fase,ciclo){
+ const F=FORMULE[S.formula];
+ if(F.cicli){
+   const c=F.cicli[ciclo%F.cicli.length];
+   if(suona('risorto-'+fase,1))return;
+   try{const u=new SpeechSynthesisUtterance(c[fase]);
+    u.lang='it-IT';u.rate=.72;u.pitch=.9;u.volume=.85;speechSynthesis.speak(u);}catch(e){}
+   return;
+ }
  if(suona(S.formula+'-'+fase,1))return;
- try{const u=new SpeechSynthesisUtterance(FORMULE[S.formula][fase]);
+ try{const u=new SpeechSynthesisUtterance(F[fase]);
   u.lang='it-IT';u.rate=.72;u.pitch=.9;u.volume=.85;speechSynthesis.speak(u);}catch(e){}
 }
 const zitto=()=>{try{speechSynthesis.cancel()}catch(e){}};
@@ -221,8 +249,8 @@ function tacche(n){
 function apri(quando){
  P.quando=quando;P.tras=0;P.acc=0;P.ultimo='';
  const c=PLAN[settimana()-1][quando];
- P.totale=Math.min(CAP,c.k*c.g*S.pace);
- $('carico').textContent=c.g+' × '+c.k+' nodi';
+ P.totale=Math.min(CAP,S.durata*60);
+ $('carico').textContent=c.g+' × '+c.k+' nodi · '+S.durata+' min';
  tacche(c.k*c.g);
  $('sessione').classList.add('on');
  $('pausa').textContent='Sospendi';$('pausa').className='secondario';
@@ -246,10 +274,15 @@ function avvia(){
    const on=ciclo>=+l.dataset.soglia;
    l.setAttribute('stroke',on?'var(--gold)':'var(--line)');
    l.setAttribute('stroke-width',on?'2':'1');});
-  $('frase').textContent=FORMULE[S.formula][fase];
+  const F=FORMULE[S.formula];
+  $('frase').textContent=F.cicli?F.cicli[ciclo%F.cicli.length][fase]:F[fase];
   $('fase').textContent=fase==='in'?'inspira':'espira';
   $('orologio').textContent=mmss(Math.max(0,P.totale-el));
-  if(S.voce){const k=ciclo+'-'+fase;if(k!==P.ultimo){P.ultimo=k;dici(fase);}}
+  // feedback visivo forte: contatore nodi + barra avanzamento
+  const nodiFatti=Math.min(ciclo,PLAN[settimana()-1][P.quando].k*PLAN[settimana()-1][P.quando].g);
+  $('nodi').textContent=nodiFatti;
+  $('barraAvanz').style.width=Math.min(100,el/P.totale*100)+'%';
+  if(S.voce){const k=ciclo+'-'+fase;if(k!==P.ultimo){P.ultimo=k;dici(fase,ciclo);}}
   if(el>=P.totale){finisci();return;}
   P.raf=requestAnimationFrame(tick);};
  P.raf=requestAnimationFrame(tick);
@@ -295,6 +328,7 @@ function render(){
   const d=new Date();d.setDate(d.getDate()-(13-i));
   const v=S.log[iso(d)]||{};return (v.m?1:0)+(v.e?1:0);});
  const salti=scia.slice(7).filter(n=>n===0).length;
+ const senza=giorniSenza();
 
  const card=(q,et,anc)=>{
   const c=piano[q],f=log[q];
@@ -303,7 +337,7 @@ function render(){
     <span class="eyebrow" style="${f?'color:var(--gold)':''}">${et}</span>
     ${f?'<span class="eyebrow" style="color:var(--gold)">fatta</span>':''}</div>
    <h2>${c.g} × ${c.k} nodi</h2>
-   <p>${mmss(Math.min(CAP,c.k*c.g*S.pace))} · ${anc}</p></button>`;};
+   <p>${mmss(Math.min(CAP,S.durata*60))} · ${anc}</p></button>`;};
 
  app.innerHTML=`<div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2.5rem">
@@ -318,10 +352,10 @@ function render(){
   <p style="font-size:.75rem;color:var(--muted);margin-bottom:2.5rem">
    Fatta o non fatta. Nient'altro viene misurato.</p>
 
-  ${salti>=7?`<div style="padding:1rem;border-radius:.5rem;background:var(--raised);
+  ${senza>=7?`<div style="padding:1rem;border-radius:.5rem;background:var(--raised);
     border:1px solid var(--porphyry);margin-bottom:2.5rem">
     <p style="font-size:.875rem;margin-bottom:.75rem">Sette giorni senza pratica.
-     Il protocollo dice di tornare alla settimana 1, senza commento.</p>
+     Nessun rimprovero: si riparte dalla settimana 1, con calma. Lo storico resta.</p>
     <button id="riparti" class="eyebrow" style="color:var(--gold)">Riparti dalla settimana 1</button>
    </div>`:''}
 
@@ -337,6 +371,10 @@ function render(){
   <div class="row" style="margin-bottom:1.5rem">${PACE.map(p=>
    `<button class="pill${S.pace===p.s?' on':''}" data-p="${p.s}">${p.nome} · ${p.s}s</button>`).join('')}</div>
 
+  <p style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">Durata sessione</p>
+  <div class="row" style="margin-bottom:1.5rem">${DURATE.map(d=>
+   `<button class="pill${S.durata===d.m?' on':''}" data-d="${d.m}">${d.nome}</button>`).join('')}</div>
+
   <button class="sw" data-t="ison"><span style="text-align:left">
    <span style="display:block;font-size:.875rem">Ison</span>
    <span style="display:block;font-size:.6875rem;color:var(--muted)">bordone continuo sotto la preghiera</span>
@@ -350,7 +388,7 @@ function render(){
   <p id="statoAudio" style="font-size:.6875rem;color:var(--goldDim);margin:1rem 0 2rem">
    ${testoStato()}</p>
 
-  <p class="nota">Tetto fisso a venti minuti per sessione. Nessun ritiro prolungato.
+  <p class="nota">Sessione da dieci o venti minuti, a tua scelta. Nessun ritiro prolungato.
    Se compaiono sonno molto ridotto senza bisogno di dormire, pensiero accelerato
    o senso di missione, sospendi e parlane con uno specialista prima di riprendere.</p>
  </div>`;
@@ -358,6 +396,7 @@ function render(){
  app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>apri(b.dataset.q));
  app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.formula=b.dataset.f;salva();render();});
  app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.pace=+b.dataset.p;salva();render();});
+ app.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{S.durata=+b.dataset.d;salva();render();});
  app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S[b.dataset.t]=!S[b.dataset.t];salva();render();});
  const r=$('riparti');if(r)r.onclick=()=>{S.start=oggi();salva();render();};
 }
