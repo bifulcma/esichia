@@ -118,30 +118,32 @@ const PLAN=[
 
 const FORMULE={
  piena:{nome:'Versione lunga',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
- breve:{nome:'Meditazione',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
+ breve:{nome:'Meditazione',in:'Signore Gesù Cristo',out:'abbi pietà di me'},
  minima:{nome:'Minima',in:'Kyrie',out:'eleison'},
  risorto:{nome:'Risorto',cicli:[
    {in:'Gesù Cristo Figlio di Dio',out:'Cristo Risorto'},
    {in:'concedimi la grazia',out:'Amen'}]}};
 
 const PACE=[{s:10,nome:'Respiro breve'},{s:12,nome:'Respiro naturale'},{s:14,nome:'Respiro lungo'}];
-const CAP=20*60;
 const BASE='https://raw.githubusercontent.com/bifulcma/esichia/main/audio';
-const TRACCE={'piena-in':1,'piena-out':1,'breve-in':1,'breve-out':1,
-              'minima-in':1,'minima-out':1,'campana':1,'ison':1};
 
 /* ─────────────── stato ─────────────── */
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+const lsJSON=(k,d)=>{try{return JSON.parse(lsGet(k,d));}catch(e){return d;}};
 const S={
- start:localStorage.getItem('esichia:start')||null,
- log:JSON.parse(localStorage.getItem('esichia:log')||'{}'),
- ...JSON.parse(localStorage.getItem('esichia:pref')||'{"formula":"piena","pace":8,"durata":10,"ison":true,"voce":true}')
+ start:lsGet('esichia:start',null),
+ log:lsJSON('esichia:log','{}'),
+ ...lsJSON('esichia:pref','{"formula":"piena","pace":10,"ison":true,"voce":true}')
 };
 const salva=()=>{
- localStorage.setItem('esichia:log',JSON.stringify(S.log));
- localStorage.setItem('esichia:pref',JSON.stringify(
-   {formula:S.formula,pace:S.pace,durata:S.durata,ison:S.ison,voce:S.voce}));
- if(S.start)localStorage.setItem('esichia:start',S.start);
+ lsSet('esichia:log',JSON.stringify(S.log));
+ lsSet('esichia:pref',JSON.stringify(
+   {formula:S.formula,pace:S.pace,ison:S.ison,voce:S.voce}));
+ if(S.start)lsSet('esichia:start',S.start);
 };
+// pace effettiva: la Meditazione usa sempre respiro lungo (14s), senza toccare la scelta dell'utente
+const paceEff=()=>S.formula==='breve'?14:S.pace;
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const oggi=()=>iso(new Date());
 const settimana=()=>S.start?Math.min(8,Math.max(1,
@@ -151,7 +153,7 @@ const settimana=()=>S.start?Math.min(8,Math.max(1,
 const giorniSenza=()=>{
  if(!S.start)return 0;
  let n=0;const d=new Date();
- for(let i=0;i<7;i++){const v=S.log[iso(d)]||{};if(!v.m&&!v.e)n++;d.setDate(d.getDate()-1);}
+ for(let i=0;i<7;i++){const v=S.log[iso(d)]||{};if(!v.m&&!v.p&&!v.e)n++;d.setDate(d.getDate()-1);}
  return n;};
 const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 
@@ -163,7 +165,7 @@ const ctx=()=>{
  return A.ctx;};
 
 async function caricaAudio(){
- const chiavi=Object.keys(TRACCE);
+ const chiavi=['campana',...(S.ison?['ison']:[])]; // lazy-load: ison solo se attivo
  await Promise.all(chiavi.map(async k=>{
    try{
      const r=await fetch(BASE+'/'+k+'.mp3',{mode:'cors'});
@@ -235,15 +237,17 @@ function voceFem(){
  }catch(e){_voceFem=null;}
  return _voceFem;
 }
+// iOS: getVoices() è vuoto al primo giro → invalida la cache quando arrivano
+if('speechSynthesis'in window)speechSynthesis.onvoiceschanged=()=>{_voceFem=null;};
 function parla(testo){
- try{const u=new SpeechSynthesisUtterance(testo);
+ try{zitto();const u=new SpeechSynthesisUtterance(testo);
   u.lang='it-IT';u.rate=.72;u.pitch=1.05;u.volume=.85;
   const v=voceFem();if(v)u.voice=v;
   speechSynthesis.speak(u);}catch(e){}
 }
 
 /* ─────────────── sessione ─────────────── */
-const P={attiva:false,quando:null,totale:0,tras:0,acc:0,t0:0,raf:0,ultimo:'',wake:null};
+const P={attiva:false,quando:null,totale:0,tras:0,acc:0,t0:0,raf:0,ultimo:'',ciclo:0,wake:null};
 const $=id=>document.getElementById(id);
 const ridotto=matchMedia('(prefers-reduced-motion:reduce)').matches;
 async function wakeOn(){
@@ -268,12 +272,14 @@ function tacche(n){
 function apri(quando){
  P.quando=quando;P.tras=0;P.acc=0;P.ultimo='';
  const c=PLAN[settimana()-1][quando];
- P.totale=c.k*c.g*S.pace; // durata = nodi × giri × passo: il timer finisce esattamente coi nodi
+ P.totale=c.k*c.g*paceEff(); // durata = nodi × giri × passo: il timer finisce esattamente coi nodi
  $('carico').textContent=c.g+' × '+c.k+' nodi · '+mmss(P.totale);
  tacche(c.k*c.g);
  $('sessione').classList.add('on');
  $('pausa').textContent='Sospendi';$('pausa').className='secondario';
  campana(174); if(S.ison)isonOn();
+ // sblocco iOS: utterance muta dentro il click (richiesto da Safari)
+ try{const u=new SpeechSynthesisUtterance('');u.volume=0;speechSynthesis.speak(u);}catch(e){}
  wakeOn();
  avvia();
 }
@@ -282,25 +288,26 @@ function avvia(){
  const tick=now=>{
   if(!P.attiva)return;
   const el=P.acc+(now-P.t0)/1000;P.tras=el;
-  const dentro=el%S.pace,metà=S.pace*0.4;
+  const dentro=el%paceEff(),metà=paceEff()*0.4;
   const fase=dentro<metà?'in':'out';
-  const prog=fase==='in'?dentro/metà:(dentro-metà)/metà;
+  const prog=fase==='in'?dentro/metà:(dentro-metà)/(paceEff()-metà);
   const t=ridotto?.5:(fase==='in'?prog:1-prog);
   const r=128*(0.72+0.2*(0.5-Math.cos(Math.PI*t)/2));
   $('respiro').setAttribute('r',r.toFixed(1));
   $('alone').setAttribute('r',(r*.94).toFixed(1));
-  const ciclo=Math.floor(el/S.pace);
-  [...$('tacche').children].forEach(l=>{
-   const on=ciclo>=+l.dataset.soglia;
-   l.setAttribute('stroke',on?'var(--gold)':'var(--line)');
-   l.setAttribute('stroke-width',on?'2':'1');});
+  const ciclo=Math.floor(el/paceEff());
+  if(ciclo!==P.ciclo){P.ciclo=ciclo;
+   [...$('tacche').children].forEach(l=>{
+    const on=ciclo>=+l.dataset.soglia;
+    l.setAttribute('stroke',on?'var(--gold)':'var(--line)');
+    l.setAttribute('stroke-width',on?'2':'1');});
+   const nodiFatti=Math.min(ciclo,PLAN[settimana()-1][P.quando].k*PLAN[settimana()-1][P.quando].g);
+   $('nodi').textContent=nodiFatti;}
   const F=FORMULE[S.formula];
   $('frase').textContent=F.cicli?F.cicli[ciclo%F.cicli.length][fase]:F[fase];
   $('fase').textContent=fase==='in'?'inspira':'espira';
   $('orologio').textContent=mmss(Math.max(0,P.totale-el));
-  // feedback visivo forte: contatore nodi + barra avanzamento
-  const nodiFatti=Math.min(ciclo,PLAN[settimana()-1][P.quando].k*PLAN[settimana()-1][P.quando].g);
-  $('nodi').textContent=nodiFatti;
+  // barra avanzamento (aggiornata ogni frame, economica)
   $('barraAvanz').style.width=Math.min(100,el/P.totale*100)+'%';
   if(S.voce){const k=ciclo+'-'+fase;if(k!==P.ultimo){P.ultimo=k;dici(fase,ciclo);}}
   if(el>=P.totale){finisci();return;}
@@ -320,12 +327,23 @@ function chiudi(){
  $('sessione').classList.remove('on');$('frase').style.opacity=.92;render();
 }
 $('chiudi').onclick=chiudi;
+// Esc chiude la sessione
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('sessione').classList.contains('on'))chiudi();});
 $('pausa').onclick=()=>{
  if(P.tras>=P.totale){chiudi();return;}
  if(P.attiva){P.attiva=false;cancelAnimationFrame(P.raf);P.acc=P.tras;
   zitto();isonOff();$('pausa').textContent='Riprendi';}
  else{if(S.ison)isonOn();$('pausa').textContent='Sospendi';avvia();}
 };
+// auto-pausa quando l'app va in background (rAF si ferma ma il timer corre)
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden&&P.attiva){
+  P.attiva=false;cancelAnimationFrame(P.raf);P.acc=P.tras;
+  zitto();isonOff();$('pausa').textContent='Riprendi';
+ }else if(!document.hidden&&$('sessione').classList.contains('on')){
+  wakeOn(); // riacquista il wakeLock quando si torna in primo piano
+ }
+});
 
 /* ─────────────── schermata ─────────────── */
 function render(){
@@ -357,7 +375,7 @@ function render(){
     <span class="eyebrow" style="${f?'color:var(--gold)':''}">${et}</span>
     ${f?'<span class="eyebrow" style="color:var(--gold)">fatta</span>':''}</div>
    <h2>${c.g} × ${c.k} nodi</h2>
-   <p>${mmss(c.k*c.g*S.pace)} · ${anc}</p></button>`;};
+   <p>${mmss(c.k*c.g*paceEff())} · ${anc}</p></button>`;};
 
  app.innerHTML=`<div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2.5rem">
@@ -411,7 +429,7 @@ function render(){
  </div>`;
 
  app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>apri(b.dataset.q));
- app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.formula=b.dataset.f;if(S.formula==='breve')S.pace=14;salva();render();});
+ app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.formula=b.dataset.f;salva();render();});
  app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.pace=+b.dataset.p;salva();render();});
  app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S[b.dataset.t]=!S[b.dataset.t];salva();render();});
  const r=$('riparti');if(r)r.onclick=()=>{S.start=oggi();salva();render();};
