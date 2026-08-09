@@ -111,10 +111,10 @@
 <script>
 /* ─────────────── protocollo ─────────────── */
 const PLAN=[
- {m:{k:33,g:1},e:{k:33,g:1}},{m:{k:33,g:1},e:{k:33,g:1}},
- {m:{k:33,g:2},e:{k:33,g:1}},{m:{k:33,g:2},e:{k:33,g:1}},
- {m:{k:100,g:1},e:{k:33,g:1}},{m:{k:100,g:1},e:{k:33,g:1}},
- {m:{k:100,g:1},e:{k:100,g:1}},{m:{k:100,g:1},e:{k:100,g:1}}];
+ {m:{k:33,g:1},p:{k:33,g:1},e:{k:33,g:1}},{m:{k:33,g:1},p:{k:33,g:1},e:{k:33,g:1}},
+ {m:{k:33,g:2},p:{k:33,g:1},e:{k:33,g:1}},{m:{k:33,g:2},p:{k:33,g:1},e:{k:33,g:1}},
+ {m:{k:100,g:1},p:{k:33,g:1},e:{k:33,g:1}},{m:{k:100,g:1},p:{k:33,g:1},e:{k:33,g:1}},
+ {m:{k:100,g:1},p:{k:33,g:1},e:{k:100,g:1}},{m:{k:100,g:1},p:{k:33,g:1},e:{k:100,g:1}}];
 
 const FORMULE={
  piena:{nome:'Versione lunga',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
@@ -340,7 +340,7 @@ function render(){
       opacity:.5;margin-bottom:2rem"></div>
     <h1 class="titolo" style="font-size:2.25rem;margin-bottom:.75rem">Esichia</h1>
     <p style="font-size:.875rem;line-height:1.7;color:var(--muted);max-width:20rem;margin-bottom:3rem">
-      Otto settimane. Due sessioni al giorno, mattino e sera.
+      Otto settimane. Tre sessioni al giorno: mattino, pomeriggio e sera.
       Il komboskini resta in mano: qui c'è solo il passo e il tempo.</p>
     <button class="primario" id="vai">Comincia oggi</button></div>`;
   $('vai').onclick=()=>{S.start=oggi();salva();render();};
@@ -349,7 +349,7 @@ function render(){
  const sett=settimana(),piano=PLAN[sett-1],log=S.log[oggi()]||{};
  const scia=[...Array(14)].map((_,i)=>{
   const d=new Date();d.setDate(d.getDate()-(13-i));
-  const v=S.log[iso(d)]||{};return (v.m?1:0)+(v.e?1:0);});
+  const v=S.log[iso(d)]||{};return (v.m?1:0)+(v.p?1:0)+(v.e?1:0);});
  const salti=scia.slice(7).filter(n=>n===0).length;
  const senza=giorniSenza();
 
@@ -368,6 +368,7 @@ function render(){
    <span class="eyebrow" style="color:var(--gold)">Settimana ${sett} / 8</span></div>
 
   ${card('m','Mattino','tolta la maschera, prima del telefono')}
+  ${card('p','Pomeriggio','un richiamo a metà giornata')}
   ${card('e','Sera','prima di indossare la maschera')}
 
   <p class="eyebrow" style="margin:2.5rem 0 .75rem">Ultimi quattordici giorni</p>
