@@ -387,7 +387,7 @@ function render(){
    `<button class="pill${S.formula===k?' on':''}" data-f="${k}">${v.nome}</button>`).join('')}</div>
   <p style="font-family:var(--serif);font-style:italic;font-size:.6875rem;
     color:var(--goldDim);margin:.5rem 0 1.5rem">
-   ${FORMULE[S.formula].in} — ${FORMULE[S.formula].out}</p>
+   ${FORMULE[S.formula].cicli?FORMULE[S.formula].cicli.map(c=>c.in+' — '+c.out).join(' · '):FORMULE[S.formula].in+' — '+FORMULE[S.formula].out}</p>
   <p style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">Passo del respiro</p>
   <div class="row" style="margin-bottom:1.5rem">${PACE.map(p=>
    `<button class="pill${S.pace===p.s?' on':''}" data-p="${p.s}">${p.nome} · ${p.s}s</button>`).join('')}</div>
