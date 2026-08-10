@@ -241,21 +241,32 @@ function voceFem(){
 if('speechSynthesis'in window)speechSynthesis.onvoiceschanged=()=>{_voceFem=null;};
 function parla(testo){
  try{zitto();const u=new SpeechSynthesisUtterance(testo);
-  u.lang='it-IT';u.rate=.72;u.pitch=1.05;u.volume=.85;
+  u.lang='it-IT';u.rate=.95;u.pitch=1.05;u.volume=.85;
   const v=voceFem();if(v)u.voice=v;
   speechSynthesis.speak(u);}catch(e){}
 }
 
 /* ─────────────── sessione ─────────────── */
-const P={attiva:false,quando:null,totale:0,tras:0,acc:0,t0:0,raf:0,ultimo:'',ciclo:0,wake:null};
+const P={attiva:false,quando:null,totale:0,tras:0,acc:0,t0:0,raf:0,ultimo:'',ciclo:0,wake:null,wakeTimer:null};
 const $=id=>document.getElementById(id);
 const ridotto=matchMedia('(prefers-reduced-motion:reduce)').matches;
 async function wakeOn(){
- try{if('wakeLock'in navigator&&!P.wake){P.wake=await navigator.wakeLock.request('screen');}}
- catch(e){}
+ try{if('wakeLock'in navigator&&!P.wake){
+  P.wake=await navigator.wakeLock.request('screen');
+  P.wake.addEventListener('release',()=>{P.wake=null;});
+ }}catch(e){P.wake=null;}
+}
+// iOS rilascia il lock dopo un po': ri-request continua ogni ~18s mentre la sessione è aperta.
+// Se la richiesta fallisce la sessione continua comunque (timer su performance.now/rAF).
+function wakeKeepOn(){
+ wakeOn();clearInterval(P.wakeTimer);
+ P.wakeTimer=setInterval(()=>{
+  if($('sessione').classList.contains('on')&&!document.hidden)wakeOn();
+ },18000);
 }
 function wakeOff(){
- try{if(P.wake){P.wake.release();P.wake=null;}}catch(e){}
+ clearInterval(P.wakeTimer);P.wakeTimer=null;
+ try{if(P.wake){const w=P.wake;P.wake=null;w.release();}}catch(e){}
 }
 
 function tacche(n){
@@ -280,7 +291,7 @@ function apri(quando){
  campana(174); if(S.ison)isonOn();
  // sblocco iOS: utterance muta dentro il click (richiesto da Safari)
  try{const u=new SpeechSynthesisUtterance('');u.volume=0;speechSynthesis.speak(u);}catch(e){}
- wakeOn();
+ wakeKeepOn();
  avvia();
 }
 function avvia(){
@@ -344,6 +355,9 @@ document.addEventListener('visibilitychange',()=>{
   wakeOn(); // riacquista il wakeLock quando si torna in primo piano
  }
 });
+// riacquista il wakeLock anche su pageshow (back-forward cache) e resume (WebView/Cordova)
+window.addEventListener('pageshow',()=>{if($('sessione').classList.contains('on'))wakeOn();});
+document.addEventListener('resume',()=>{if($('sessione').classList.contains('on'))wakeOn();});
 
 /* ─────────────── schermata ─────────────── */
 function render(){
