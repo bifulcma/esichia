@@ -441,7 +441,9 @@ function render(){
  app.innerHTML=`<div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2.5rem">
    <h1 class="titolo" style="font-size:1.875rem">Esichia</h1>
-   <span class="eyebrow" style="color:var(--gold)">Settimana ${sett} / 8</span></div>
+   <span class="eyebrow" style="color:var(--gold);font-size:.75rem">
+     <a href="https://gospel-dono.vercel.app" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline">Vangelo del giorno →</a>
+     · Settimana ${sett} / 8</span></div>
 
   ${card('m','Mattino','tolta la maschera, prima del telefono')}
   ${card('p','Pomeriggio','un richiamo a metà giornata')}
