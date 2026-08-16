@@ -108,6 +108,7 @@
   <div class="fondo"><button id="pausa" class="secondario">Sospendi</button></div>
 </div>
 
+<script src="esichia-config.js"></script>
 <script>
 /* ─────────────── protocollo ─────────────── */
 const PLAN=[
@@ -142,6 +143,50 @@ const salva=()=>{
    {formula:S.formula,pace:S.pace,ison:S.ison,voce:S.voce}));
  if(S.start)lsSet('esichia:start',S.start);
 };
+
+/* ─────────────── Supabase: sync cloud (localStorage resta il fallback offline) ─────────────── */
+const SB=window.ESICHIA_SUPABASE||{};
+const sbAttivo=()=>Boolean(SB.url&&SB.anonKey&&!/INCOLLA/.test(SB.url+SB.anonKey));
+const sbHeaders=()=>({apikey:SB.anonKey,Authorization:'Bearer '+SB.anonKey,'Content-Type':'application/json'});
+// upsert del giorno nel cloud (chiave: user_id+giorno)
+async function sbSalvaGiorno(giorno,v){
+ if(!sbAttivo())return;
+ try{
+  await fetch(SB.url+'/rest/v1/esichia_sessioni?on_conflict=user_id,giorno',{
+   method:'POST',
+   headers:{...sbHeaders(),Prefer:'resolution=merge-duplicates'},
+   body:JSON.stringify([{user_id:SB.utente||'marco',giorno,
+     mattino:!!v.m,pomeriggio:!!v.p,sera:!!v.e}]),
+  });
+ }catch(e){/* offline: resta il localStorage; al prossimo avvio sbCarica riallinea */}
+}
+// all'avvio: scarica il log dal cloud, fondi col locale (una sessione "fatta" vince sempre),
+// ricava start dal primo giorno se manca, e spinge nel cloud i giorni solo-locali
+async function sbCarica(){
+ if(!sbAttivo())return;
+ try{
+  const r=await fetch(SB.url+'/rest/v1/esichia_sessioni?user_id=eq.'+
+    encodeURIComponent(SB.utente||'marco')+'&select=giorno,mattino,pomeriggio,sera',
+    {headers:sbHeaders()});
+  if(!r.ok)return;
+  const righe=await r.json();
+  let cambiato=false;
+  righe.forEach(x=>{
+   const loc=S.log[x.giorno]||{};
+   const fuso={m:!!(loc.m||x.mattino),p:!!(loc.p||x.pomeriggio),e:!!(loc.e||x.sera)};
+   if(fuso.m!==!!loc.m||fuso.p!==!!loc.p||fuso.e!==!!loc.e)cambiato=true;
+   S.log[x.giorno]=fuso;
+  });
+  if(!S.start&&righe.length){S.start=righe.map(x=>x.giorno).sort()[0];cambiato=true;}
+  Object.keys(S.log).forEach(g=>{
+   const remoto=righe.find(x=>x.giorno===g);
+   const loc=S.log[g]||{};
+   if(!remoto||!!loc.m!==!!remoto.mattino||!!loc.p!==!!remoto.pomeriggio||!!loc.e!==!!remoto.sera)
+     sbSalvaGiorno(g,loc);
+  });
+  if(cambiato){salva();render();}
+ }catch(e){}
+}
 // pace effettiva: la Meditazione usa sempre respiro lungo (14s), senza toccare la scelta dell'utente
 const paceEff=()=>S.formula==='breve'?14:S.pace;
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -327,7 +372,7 @@ function avvia(){
 }
 function finisci(){
  P.attiva=false;cancelAnimationFrame(P.raf);isonOff();zitto();campana(130);wakeOff();
- const d=oggi();S.log[d]={...(S.log[d]||{}),[P.quando]:true};salva();
+ const d=oggi();S.log[d]={...(S.log[d]||{}),[P.quando]:true};salva();sbSalvaGiorno(d,S.log[d]);
  $('frase').textContent='—';$('frase').style.opacity=.25;
  $('fase').textContent='compiuta';$('orologio').textContent='0:00';
  $('pausa').textContent='Torna';$('pausa').className='primario';
@@ -453,6 +498,7 @@ function render(){
 
 render();
 caricaAudio();
+sbCarica(); // sync dal cloud: fonde il log remoto e aggiorna la schermata
 </script>
 </body>
 </html>
