@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FAF9F5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Esichia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#FAF9F5; --raised:#FFFFFF; --line:#E8E4DC;
+    --gold:#C2664A; --goldDim:#A34E35; --porphyry:#7A2E3C;
+    --text:#29261F; --muted:#6b6355;
+    --serif:'Cormorant',Georgia,serif; --sans:'IBM Plex Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--ground);color:var(--text);font-family:var(--sans);font-weight:300;
+       min-height:100vh;min-height:100dvh;overscroll-behavior:none}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  button:focus-visible{outline:1px solid var(--gold);outline-offset:3px}
+  .wrap{max-width:28rem;margin:0 auto;padding:2.5rem 1.5rem 4rem}
+  .eyebrow{font-size:.625rem;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .titolo{font-family:var(--serif);font-weight:300;letter-spacing:.04em}
+  .card{display:block;width:100%;text-align:left;padding:1.25rem;border-radius:.5rem;
+        background:var(--raised);border:1px solid var(--line);margin-bottom:.75rem;
+        transition:opacity .2s}
+  .card:hover{opacity:.85}
+  .card.fatta{border-color:var(--goldDim)}
+  .card h2{font-family:var(--serif);font-weight:300;font-size:1.5rem;margin:.25rem 0}
+  .card p{font-size:.75rem;color:var(--muted)}
+  .pill{flex:1;padding:.5rem;border-radius:.25rem;font-size:.75rem;
+        border:1px solid var(--line);color:var(--muted);transition:opacity .2s}
+  .pill.on{background:var(--gold);color:var(--ground);border-color:var(--gold)}
+  .row{display:flex;gap:.5rem}
+  .sw{display:flex;width:100%;align-items:center;justify-content:space-between;
+      padding:.75rem;border:1px solid var(--line);border-radius:.25rem;margin-bottom:.75rem}
+  .knob{width:2.25rem;height:1.25rem;border-radius:999px;background:var(--line);
+        display:flex;align-items:center;padding:2px;justify-content:flex-start}
+  .knob.on{background:var(--gold);justify-content:flex-end}
+  .knob i{width:1rem;height:1rem;border-radius:999px;background:var(--muted);display:block}
+  .knob.on i{background:var(--ground)}
+  .scia{display:flex;gap:.375rem;margin-bottom:.5rem}
+  .scia div{flex:1;height:2rem;border-radius:2px;background:var(--raised);border:1px solid var(--line)}
+  .scia div[data-n="1"]{background:var(--goldDim)}
+  .scia div[data-n="2"]{background:var(--gold)}
+  .primario{padding:.75rem 3rem;border-radius:999px;background:var(--gold);color:var(--ground);
+            font-size:.75rem;letter-spacing:.2em;text-transform:uppercase}
+  .secondario{padding:.75rem 2.5rem;border-radius:999px;border:1px solid var(--line);
+              font-size:.75rem;letter-spacing:.2em;text-transform:uppercase}
+  /* sessione */
+  #sessione{position:fixed;inset:0;background:var(--ground);display:none;
+            flex-direction:column;z-index:10}
+  #sessione.on{display:flex}
+  .barra{display:flex;justify-content:space-between;align-items:center;
+         padding:calc(1.5rem + env(safe-area-inset-top)) 1.5rem 0}
+  .centro{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 1.5rem}
+  .nimbo{position:relative;width:100%;max-width:20rem;aspect-ratio:1}
+  .nimbo svg{width:100%;height:100%;display:block}
+  .dentro{position:absolute;inset:0;display:flex;flex-direction:column;
+          align-items:center;justify-content:center;text-align:center;padding:0 2.5rem}
+  .dentro p{font-family:var(--serif);font-size:.95rem;line-height:1.6;opacity:.92;transition:opacity .4s}
+  .dentro span{margin-top:1rem;font-size:.625rem;letter-spacing:.3em;
+               text-transform:uppercase;color:var(--goldDim)}
+  .orologio{margin-top:2.5rem;font-size:1.5rem;color:var(--muted);font-variant-numeric:tabular-nums}
+  .fondo{padding:0 1.5rem calc(2.5rem + env(safe-area-inset-bottom));display:flex;justify-content:center}
+  .nota{font-size:.6875rem;line-height:1.6;color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<div id="sessione">
+  <div class="barra">
+    <button id="chiudi" class="eyebrow">Chiudi</button>
+    <span id="carico" class="eyebrow"></span>
+  </div>
+  <div class="centro">
+    <div class="nimbo">
+      <svg viewBox="0 0 300 300" aria-hidden="true">
+        <circle cx="150" cy="150" r="128" fill="none" stroke="var(--line)" stroke-width="1"/>
+        <g id="tacche"></g>
+        <circle id="respiro" cx="150" cy="150" r="100" fill="none"
+                stroke="var(--gold)" stroke-width="0.8" opacity="0.55"/>
+        <circle id="alone" cx="150" cy="150" r="94" fill="var(--gold)" opacity="0.045"/>
+      </svg>
+      <div class="dentro">
+        <p id="frase"></p>
+        <span id="fase"></span>
+      </div>
+    </div>
+    <p id="orologio" class="orologio">0:00</p>
+    <div style="width:100%;max-width:20rem;margin-top:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem">
+        <span class="eyebrow">Nodi</span>
+        <span id="nodi" style="font-size:1.5rem;color:var(--gold);font-variant-numeric:tabular-nums">0</span>
+      </div>
+      <div style="height:4px;background:var(--line);border-radius:99px;overflow:hidden">
+        <div id="barraAvanz" style="height:100%;width:0%;background:var(--gold);transition:width .3s"></div>
+      </div>
+    </div>
+  </div>
+  <div class="fondo"><button id="pausa" class="secondario">Sospendi</button></div>
+</div>
+
+<script>
+/* ─────────────── protocollo ─────────────── */
+const PLAN=[
+ {m:{k:33,g:1},p:{k:33,g:1},e:{k:33,g:1}},{m:{k:33,g:1},p:{k:33,g:1},e:{k:33,g:1}},
+ {m:{k:33,g:2},p:{k:33,g:1},e:{k:33,g:1}},{m:{k:33,g:2},p:{k:33,g:1},e:{k:33,g:1}},
+ {m:{k:100,g:1},p:{k:33,g:1},e:{k:33,g:1}},{m:{k:100,g:1},p:{k:33,g:1},e:{k:33,g:1}},
+ {m:{k:100,g:1},p:{k:33,g:1},e:{k:100,g:1}},{m:{k:100,g:1},p:{k:33,g:1},e:{k:100,g:1}}];
+
+const FORMULE={
+ piena:{nome:'Versione lunga',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
+ breve:{nome:'Meditazione',in:'Signore Gesù Cristo',out:'abbi pietà di me'},
+ minima:{nome:'Minima',in:'Kyrie',out:'eleison'},
+ risorto:{nome:'Risorto',cicli:[
+   {in:'Gesù Cristo Figlio di Dio',out:'Cristo Risorto'},
+   {in:'concedimi la grazia',out:'Amen'}]}};
+
+const PACE=[{s:10,nome:'Respiro breve'},{s:12,nome:'Respiro naturale'},{s:14,nome:'Respiro lungo'}];
+const BASE='audio';
+
+/* ─────────────── stato ─────────────── */
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+const lsJSON=(k,d)=>{try{return JSON.parse(lsGet(k,d));}catch(e){return d;}};
+const S={
+ start:lsGet('esichia:start',null),
+ log:lsJSON('esichia:log','{}'),
+ ...lsJSON('esichia:pref','{"formula":"piena","pace":10,"ison":true,"voce":true}')
+};
+const salva=()=>{
+ lsSet('esichia:log',JSON.stringify(S.log));
+ lsSet('esichia:pref',JSON.stringify(
+   {formula:S.formula,pace:S.pace,ison:S.ison,voce:S.voce}));
+ if(S.start)lsSet('esichia:start',S.start);
+};
+// pace effettiva: la Meditazione usa sempre respiro lungo (14s), senza toccare la scelta dell'utente
+const paceEff=()=>S.formula==='breve'?14:S.pace;
+const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const oggi=()=>iso(new Date());
+const settimana=()=>S.start?Math.min(8,Math.max(1,
+  Math.floor((new Date(oggi())-new Date(S.start))/864e5/7)+1)):1;
+// streak perdonante: se 7 giorni senza pratica, non reset secco ma ripartenza morbida
+// (torna alla settimana 1 ma conserva lo storico; il reset è un invito, non una punizione)
+const giorniSenza=()=>{
+ if(!S.start)return 0;
+ let n=0;const d=new Date();
+ for(let i=0;i<7;i++){const v=S.log[iso(d)]||{};if(!v.m&&!v.p&&!v.e)n++;d.setDate(d.getDate()-1);}
+ return n;};
+const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+
+/* ─────────────── audio ─────────────── */
+const A={ctx:null,buf:{},ison:null,stato:'attesa'};
+const ctx=()=>{
+ if(!A.ctx)A.ctx=new (window.AudioContext||window.webkitAudioContext)();
+ if(A.ctx.state==='suspended')A.ctx.resume();
+ return A.ctx;};
+
+async function caricaAudio(){
+ const chiavi=['campana',...(S.ison?['ison']:[])]; // lazy-load: ison solo se attivo
+ await Promise.all(chiavi.map(async k=>{
+   try{
+     const r=await fetch(BASE+'/'+k+'.mp3',{mode:'cors'});
+     if(!r.ok)return;
+     A.buf[k]=await ctx().decodeAudioData(await r.arrayBuffer());
+   }catch(e){}
+ }));
+ const n=Object.keys(A.buf).length;
+ A.stato=n===0?'assente':n===chiavi.length?'pronto':'parziale';
+ const el=document.getElementById('statoAudio');
+ if(el)el.textContent=testoStato();
+}
+const testoStato=()=>({
+ attesa:'Tracce in caricamento.',
+ pronto:'Tracce registrate, tutte caricate.',
+ parziale:'Alcune tracce non raggiungibili: per quelle vale la sintesi.',
+ assente:'Tracce non raggiungibili. Vale la sintesi del browser.'}[A.stato]);
+function suona(k,gain){
+ const b=A.buf[k]; if(!b)return false;
+ try{const a=ctx(),s=a.createBufferSource(),g=a.createGain();
+   g.gain.value=gain||1;s.buffer=b;s.connect(g);g.connect(a.destination);s.start();
+   return true;}catch(e){return false;}
+}
+function campana(base){
+ if(suona('campana',.9))return;
+ try{const a=ctx(),n=a.currentTime,m=a.createGain();
+  m.gain.setValueAtTime(.28,n);m.gain.exponentialRampToValueAtTime(1e-4,n+6);
+  m.connect(a.destination);
+  [1,2.41,3.73,5.18].forEach((r,i)=>{const o=a.createOscillator(),g=a.createGain();
+   o.type='sine';o.frequency.value=(base||174)*r;g.gain.value=1/(i+1.6);
+   o.connect(g);g.connect(m);o.start(n);o.stop(n+6.2);});}catch(e){}
+}
+function isonOn(){
+ if(A.ison)return;
+ try{const a=ctx(),g=a.createGain();g.gain.value=1e-4;g.connect(a.destination);
+  if(A.buf.ison){const s=a.createBufferSource();s.buffer=A.buf.ison;s.loop=true;
+   s.connect(g);s.start();g.gain.exponentialRampToValueAtTime(.35,a.currentTime+3);
+   A.ison={g,nodi:[s]};return;}
+  const lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=420;
+  const os=[110,110.4,165].map((f,i)=>{const o=a.createOscillator(),og=a.createGain();
+   o.type=i===2?'sine':'triangle';o.frequency.value=f;og.gain.value=i===2?.22:.5;
+   o.connect(og);og.connect(lp);o.start();return o;});
+  lp.connect(g);g.gain.exponentialRampToValueAtTime(.05,a.currentTime+3);
+  A.ison={g,nodi:os};}catch(e){}
+}
+function isonOff(){
+ const n=A.ison;if(!n)return;A.ison=null;
+ try{n.g.gain.exponentialRampToValueAtTime(1e-4,ctx().currentTime+2);
+  setTimeout(()=>n.nodi.forEach(x=>{try{x.stop()}catch(e){}}),2400);}catch(e){}
+}
+function dici(fase,ciclo){
+ const F=FORMULE[S.formula];
+ if(F.cicli){
+   const c=F.cicli[ciclo%F.cicli.length];
+   parla(c[fase]);
+   return;
+ }
+ parla(F[fase]);
+}
+const zitto=()=>{try{speechSynthesis.cancel()}catch(e){}};
+// voce femminile italiana: sceglie la prima voce it-IT femminile disponibile
+let _voceFem=null;
+function voceFem(){
+ if(_voceFem)return _voceFem;
+ try{
+  const v=speechSynthesis.getVoices().filter(x=>x.lang&&x.lang.toLowerCase().startsWith('it'));
+  const fem=v.find(x=>/alice|elsa|elisa|giulia|chiara|federica|paola|silvia|maria|anna|vittoria|alessandra|sara|valentina|martina|sofia|ginevra|ilaria|noemi|beatrice|aurora|gaia|viola|emma|greta|luce|antonella|caterina|donna|female/i.test(x.name));
+  _voceFem=fem||v[0]||null;
+ }catch(e){_voceFem=null;}
+ return _voceFem;
+}
+// iOS: getVoices() è vuoto al primo giro → invalida la cache quando arrivano
+if('speechSynthesis'in window)speechSynthesis.onvoiceschanged=()=>{_voceFem=null;};
+function parla(testo){
+ try{zitto();const u=new SpeechSynthesisUtterance(testo);
+  u.lang='it-IT';u.rate=.95;u.pitch=1.05;u.volume=.85;
+  const v=voceFem();if(v)u.voice=v;
+  speechSynthesis.speak(u);}catch(e){}
+}
+
+/* ─────────────── sessione ─────────────── */
+const P={attiva:false,quando:null,totale:0,tras:0,acc:0,t0:0,raf:0,ultimo:'',ciclo:0,wake:null,wakeTimer:null};
+const $=id=>document.getElementById(id);
+const ridotto=matchMedia('(prefers-reduced-motion:reduce)').matches;
+async function wakeOn(){
+ try{if('wakeLock'in navigator&&!P.wake){
+  P.wake=await navigator.wakeLock.request('screen');
+  P.wake.addEventListener('release',()=>{P.wake=null;});
+ }}catch(e){P.wake=null;}
+}
+// iOS rilascia il lock dopo un po': ri-request continua ogni ~18s mentre la sessione è aperta.
+// Se la richiesta fallisce la sessione continua comunque (timer su performance.now/rAF).
+function wakeKeepOn(){
+ wakeOn();clearInterval(P.wakeTimer);
+ P.wakeTimer=setInterval(()=>{
+  if($('sessione').classList.contains('on')&&!document.hidden)wakeOn();
+ },18000);
+}
+function wakeOff(){
+ clearInterval(P.wakeTimer);P.wakeTimer=null;
+ try{if(P.wake){const w=P.wake;P.wake=null;w.release();}}catch(e){}
+}
+
+function tacche(n){
+ const t=n>50?50:n,passo=n/t,g=$('tacche');g.innerHTML='';
+ for(let i=0;i<t;i++){
+  const ang=(i/t)*Math.PI*2-Math.PI/2;
+  const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+  l.setAttribute('x1',150+Math.cos(ang)*124);l.setAttribute('y1',150+Math.sin(ang)*124);
+  l.setAttribute('x2',150+Math.cos(ang)*131);l.setAttribute('y2',150+Math.sin(ang)*131);
+  l.setAttribute('stroke','var(--line)');l.setAttribute('stroke-width','1');
+  l.setAttribute('stroke-linecap','round');l.dataset.soglia=Math.round((i+1)*passo);
+  g.appendChild(l);}
+}
+function apri(quando){
+ P.quando=quando;P.tras=0;P.acc=0;P.ultimo='';
+ const c=PLAN[settimana()-1][quando];
+ P.totale=c.k*c.g*paceEff(); // durata = nodi × giri × passo: il timer finisce esattamente coi nodi
+ $('carico').textContent=c.g+' × '+c.k+' nodi · '+mmss(P.totale);
+ tacche(c.k*c.g);
+ $('sessione').classList.add('on');
+ $('pausa').textContent='Sospendi';$('pausa').className='secondario';
+ campana(174); if(S.ison)isonOn();
+ // sblocco iOS: utterance muta dentro il click (richiesto da Safari)
+ try{const u=new SpeechSynthesisUtterance('');u.volume=0;speechSynthesis.speak(u);}catch(e){}
+ wakeKeepOn();
+ avvia();
+}
+function avvia(){
+ P.attiva=true;P.t0=performance.now();
+ const tick=now=>{
+  if(!P.attiva)return;
+  const el=P.acc+(now-P.t0)/1000;P.tras=el;
+  const dentro=el%paceEff(),metà=paceEff()*0.4;
+  const fase=dentro<metà?'in':'out';
+  const prog=fase==='in'?dentro/metà:(dentro-metà)/(paceEff()-metà);
+  const t=ridotto?.5:(fase==='in'?prog:1-prog);
+  const r=128*(0.72+0.2*(0.5-Math.cos(Math.PI*t)/2));
+  $('respiro').setAttribute('r',r.toFixed(1));
+  $('alone').setAttribute('r',(r*.94).toFixed(1));
+  const ciclo=Math.floor(el/paceEff());
+  if(ciclo!==P.ciclo){P.ciclo=ciclo;
+   [...$('tacche').children].forEach(l=>{
+    const on=ciclo>=+l.dataset.soglia;
+    l.setAttribute('stroke',on?'var(--gold)':'var(--line)');
+    l.setAttribute('stroke-width',on?'2':'1');});
+   const nodiFatti=Math.min(ciclo,PLAN[settimana()-1][P.quando].k*PLAN[settimana()-1][P.quando].g);
+   $('nodi').textContent=nodiFatti;}
+  const F=FORMULE[S.formula];
+  $('frase').textContent=F.cicli?F.cicli[ciclo%F.cicli.length][fase]:F[fase];
+  $('fase').textContent=fase==='in'?'inspira':'espira';
+  $('orologio').textContent=mmss(Math.max(0,P.totale-el));
+  // barra avanzamento (aggiornata ogni frame, economica)
+  $('barraAvanz').style.width=Math.min(100,el/P.totale*100)+'%';
+  if(S.voce){const k=ciclo+'-'+fase;if(k!==P.ultimo){P.ultimo=k;dici(fase,ciclo);}}
+  if(el>=P.totale){finisci();return;}
+  P.raf=requestAnimationFrame(tick);};
+ P.raf=requestAnimationFrame(tick);
+}
+function finisci(){
+ P.attiva=false;cancelAnimationFrame(P.raf);isonOff();zitto();campana(130);wakeOff();
+ const d=oggi();S.log[d]={...(S.log[d]||{}),[P.quando]:true};salva();
+ $('frase').textContent='—';$('frase').style.opacity=.25;
+ $('fase').textContent='compiuta';$('orologio').textContent='0:00';
+ $('pausa').textContent='Torna';$('pausa').className='primario';
+ render();
+}
+function chiudi(){
+ P.attiva=false;cancelAnimationFrame(P.raf);isonOff();zitto();wakeOff();
+ $('sessione').classList.remove('on');$('frase').style.opacity=.92;render();
+}
+$('chiudi').onclick=chiudi;
+// Esc chiude la sessione
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('sessione').classList.contains('on'))chiudi();});
+$('pausa').onclick=()=>{
+ if(P.tras>=P.totale){chiudi();return;}
+ if(P.attiva){P.attiva=false;cancelAnimationFrame(P.raf);P.acc=P.tras;
+  zitto();isonOff();$('pausa').textContent='Riprendi';}
+ else{if(S.ison)isonOn();$('pausa').textContent='Sospendi';avvia();}
+};
+// auto-pausa quando l'app va in background (rAF si ferma ma il timer corre)
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden&&P.attiva){
+  P.attiva=false;cancelAnimationFrame(P.raf);P.acc=P.tras;
+  zitto();isonOff();$('pausa').textContent='Riprendi';
+ }else if(!document.hidden&&$('sessione').classList.contains('on')){
+  wakeOn(); // riacquista il wakeLock quando si torna in primo piano
+ }
+});
+// riacquista il wakeLock anche su pageshow (back-forward cache) e resume (WebView/Cordova)
+window.addEventListener('pageshow',()=>{if($('sessione').classList.contains('on'))wakeOn();});
+document.addEventListener('resume',()=>{if($('sessione').classList.contains('on'))wakeOn();});
+
+/* ─────────────── schermata ─────────────── */
+function render(){
+ const app=$('app');
+ if(!S.start){
+  app.innerHTML=`<div style="min-height:100dvh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:0 2rem;text-align:center">
+    <div style="width:4rem;height:4rem;border-radius:999px;border:1px solid var(--gold);
+      opacity:.5;margin-bottom:2rem"></div>
+    <h1 class="titolo" style="font-size:2.25rem;margin-bottom:.75rem">Esichia</h1>
+    <p style="font-size:.875rem;line-height:1.7;color:var(--muted);max-width:20rem;margin-bottom:3rem">
+      Otto settimane. Tre sessioni al giorno: mattino, pomeriggio e sera.
+      Il komboskini resta in mano: qui c'è solo il passo e il tempo.</p>
+    <button class="primario" id="vai">Comincia oggi</button>
+    <a href="https://gospel-dono.vercel.app" target="_blank" rel="noopener"
+      style="display:inline-block;margin-top:1.5rem;font-size:.8125rem;color:var(--gold);text-decoration:underline">Vangelo del giorno →</a></div>`;
+  $('vai').onclick=()=>{S.start=oggi();salva();render();};
+  return;}
+
+ const sett=settimana(),piano=PLAN[sett-1],log=S.log[oggi()]||{};
+ const scia=[...Array(14)].map((_,i)=>{
+  const d=new Date();d.setDate(d.getDate()-(13-i));
+  const v=S.log[iso(d)]||{};return (v.m?1:0)+(v.p?1:0)+(v.e?1:0);});
+ const salti=scia.slice(7).filter(n=>n===0).length;
+ const senza=giorniSenza();
+
+ const card=(q,et,anc)=>{
+  const c=piano[q],f=log[q];
+  return `<button class="card${f?' fatta':''}" data-q="${q}">
+   <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <span class="eyebrow" style="${f?'color:var(--gold)':''}">${et}</span>
+    ${f?'<span class="eyebrow" style="color:var(--gold)">fatta</span>':''}</div>
+   <h2>${c.g} × ${c.k} nodi</h2>
+   <p>${mmss(c.k*c.g*paceEff())} · ${anc}</p></button>`;};
+
+ app.innerHTML=`<div class="wrap">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2.5rem">
+   <h1 class="titolo" style="font-size:1.875rem">Esichia</h1>
+   <span class="eyebrow" style="color:var(--gold)">Settimana ${sett} / 8</span></div>
+
+  ${card('m','Mattino','tolta la maschera, prima del telefono')}
+  ${card('p','Pomeriggio','un richiamo a metà giornata')}
+  ${card('e','Sera','prima di indossare la maschera')}
+
+  <p class="eyebrow" style="margin:2.5rem 0 .75rem">Ultimi quattordici giorni</p>
+  <div class="scia">${scia.map(n=>`<div data-n="${n}"></div>`).join('')}</div>
+  <p style="font-size:.75rem;color:var(--muted);margin-bottom:2.5rem">
+   Fatta o non fatta. Nient'altro viene misurato.</p>
+
+  ${senza>=7?`<div style="padding:1rem;border-radius:.5rem;background:var(--raised);
+    border:1px solid var(--porphyry);margin-bottom:2.5rem">
+    <p style="font-size:.875rem;margin-bottom:.75rem">Sette giorni senza pratica.
+     Nessun rimprovero: si riparte dalla settimana 1, con calma. Lo storico resta.</p>
+    <button id="riparti" class="eyebrow" style="color:var(--gold)">Riparti dalla settimana 1</button>
+   </div>`:''}
+
+  <p class="eyebrow" style="margin-bottom:1rem">Impostazioni</p>
+
+  <p style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">Formula</p>
+  <div class="row">${Object.entries(FORMULE).map(([k,v])=>
+   `<button class="pill${S.formula===k?' on':''}" data-f="${k}">${v.nome}</button>`).join('')}</div>
+  <p style="font-family:var(--serif);font-style:italic;font-size:.6875rem;
+    color:var(--goldDim);margin:.5rem 0 1.5rem">
+   ${FORMULE[S.formula].cicli?FORMULE[S.formula].cicli.map(c=>c.in+' — '+c.out).join(' · '):FORMULE[S.formula].in+' — '+FORMULE[S.formula].out}</p>
+  <p style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">Passo del respiro</p>
+  <div class="row" style="margin-bottom:1.5rem">${PACE.map(p=>
+   `<button class="pill${S.pace===p.s?' on':''}" data-p="${p.s}">${p.nome} · ${p.s}s</button>`).join('')}</div>
+
+  <button class="sw" data-t="ison"><span style="text-align:left">
+   <span style="display:block;font-size:.875rem">Ison</span>
+   <span style="display:block;font-size:.6875rem;color:var(--muted)">bordone continuo sotto la preghiera</span>
+   </span><span class="knob${S.ison?' on':''}"><i></i></span></button>
+
+  <button class="sw" data-t="voce"><span style="text-align:left">
+   <span style="display:block;font-size:.875rem">Voce</span>
+   <span style="display:block;font-size:.6875rem;color:var(--muted)">la formula a ogni respiro</span>
+   </span><span class="knob${S.voce?' on':''}"><i></i></span></button>
+
+  <p id="statoAudio" style="font-size:.6875rem;color:var(--goldDim);margin:1rem 0 2rem">
+   ${testoStato()}</p>
+
+  <p class="nota">La durata segue i nodi del piano: ogni respiro è un nodo, il timer finisce quando i nodi sono compiuti.
+   Se compaiono sonno molto ridotto senza bisogno di dormire, pensiero accelerato
+   o senso di missione, sospendi e parlane con uno specialista prima di riprendere.</p>
+ </div>`;
+
+ app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>apri(b.dataset.q));
+ app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.formula=b.dataset.f;salva();render();});
+ app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.pace=+b.dataset.p;salva();render();});
+ app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S[b.dataset.t]=!S[b.dataset.t];salva();render();});
+ const r=$('riparti');if(r)r.onclick=()=>{S.start=oggi();salva();render();};
+}
+
+render();
+caricaAudio();
+</script>
+</body>
+</html>
