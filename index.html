@@ -416,6 +416,8 @@ function render(){
     <p style="font-size:.875rem;line-height:1.7;color:var(--muted);max-width:20rem;margin-bottom:3rem">
       Otto settimane. Tre sessioni al giorno: mattino, pomeriggio e sera.
       Il komboskini resta in mano: qui c'è solo il passo e il tempo.</p>
+    <a href="introduzione.html"
+      style="display:inline-block;margin-bottom:1.75rem;font-size:.8125rem;color:var(--gold);text-decoration:underline">Che cos'è questa preghiera →</a>
     <button class="primario" id="vai">Comincia oggi</button>
     <a href="https://gospel-dono.vercel.app" target="_blank" rel="noopener"
       style="display:inline-block;margin-top:1.5rem;font-size:.8125rem;color:var(--gold);text-decoration:underline">Vangelo del giorno →</a></div>`;
@@ -439,11 +441,14 @@ function render(){
    <p>${mmss(c.k*c.g*paceEff())} · ${anc}</p></button>`;};
 
  app.innerHTML=`<div class="wrap">
-  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2.5rem">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;
+    gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem">
    <h1 class="titolo" style="font-size:1.875rem">Esichia</h1>
-   <span class="eyebrow" style="color:var(--gold);font-size:.75rem">
-     <a href="https://gospel-dono.vercel.app" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline">Vangelo del giorno →</a>
-     · Settimana ${sett} / 8</span></div>
+   <span class="eyebrow" style="color:var(--gold);font-size:.75rem;text-align:right">
+     Settimana ${sett} / 8</span>
+   <span class="eyebrow" style="flex-basis:100%;font-size:.75rem">
+     <a href="introduzione.html" style="color:var(--gold);text-decoration:underline">Che cos'è questa preghiera</a>
+     · <a href="https://gospel-dono.vercel.app" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline">Vangelo del giorno →</a></span></div>
 
   ${card('m','Mattino','tolta la maschera, prima del telefono')}
   ${card('p','Pomeriggio','un richiamo a metà giornata')}
@@ -487,6 +492,8 @@ function render(){
    ${testoStato()}</p>
 
   <p class="nota">La durata segue i nodi del piano: ogni respiro è un nodo, il timer finisce quando i nodi sono compiuti.
+   Sul perché qui si preghi col respiro, e a quale titolo, vedi
+   <a href="introduzione.html" style="color:var(--goldDim)">l'introduzione</a>.
    Se compaiono sonno molto ridotto senza bisogno di dormire, pensiero accelerato
    o senso di missione, sospendi e parlane con uno specialista prima di riprendere.</p>
  </div>`;
