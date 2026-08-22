@@ -121,9 +121,8 @@ const FORMULE={
  piena:{nome:'Versione lunga',in:'Signore Gesù Cristo, Figlio di Dio',out:'abbi pietà di me peccatore'},
  breve:{nome:'Meditazione',in:'Signore Gesù Cristo',out:'abbi pietà di me'},
  minima:{nome:'Minima',in:'Kyrie',out:'eleison'},
- risorto:{nome:'Risorto',cicli:[
-   {in:'Gesù Cristo Figlio di Dio',out:'Cristo Risorto'},
-   {in:'concedimi la grazia',out:'Amen'}]}};
+ // la formula occidentale per eccellenza: Cassiano, Conl. X — apre ogni Ora della Liturgia delle Ore
+ aiuto:{nome:'Cassiano',in:'O Dio, vieni a salvarmi',out:'Signore, vieni presto in mio aiuto'}};
 
 const PACE=[{s:10,nome:'Respiro breve'},{s:12,nome:'Respiro naturale'},{s:14,nome:'Respiro lungo'}];
 const BASE='audio';
@@ -137,6 +136,7 @@ const S={
  log:lsJSON('esichia:log','{}'),
  ...lsJSON('esichia:pref','{"formula":"piena","pace":10,"ison":true,"voce":true}')
 };
+if(!FORMULE[S.formula])S.formula='piena'; // preferenza salvata su una formula rimossa
 const salva=()=>{
  lsSet('esichia:log',JSON.stringify(S.log));
  lsSet('esichia:pref',JSON.stringify(
